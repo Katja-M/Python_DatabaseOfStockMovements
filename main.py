@@ -124,3 +124,21 @@ def downloadAndUnzipForPeriod(listOfMonths, listOfyears):
                 urlofFileName = 'https://archives.nseindia.com/content/historical/EQUITIES/' + year + '/' + 'month' + '/' + fileName
                 #Construct the file on our local hard disk where we wish to save the downloaded file
                 localZipFilePath = 'C:/Users/Katja/PythonCodingTraining/DatabaseOfStockMovements' + fileName
+
+                #Make the call to download the function
+                download(localZipFilePath,urlofFileName)
+                #Make the call to the unzip function
+                unzip(localZipFilePath,localExtractFilePath)
+                #We will pause 10 seconds to not overload the NSE website
+                time.sleep(10)
+    print('Done with downloading and extracting')
+
+#Initialize a variable with a local directory in which to extract the zip file above
+localExtractFilePath = 'C:\Users\Katja\PythonCodingTraining\DatabaseOfStockMovements'
+
+#Initialize list of month and use the Indian Stock Exchange Pattern
+
+listOfMonths = ['JAN', 'FEB','MAR', 'APR', 'MAY', 'JUN','JUL','AUG','SEP','OCT','NOV','DEC']
+listOfYears = ['2017','2018']
+
+downloadAndUnzipForPeriod(listOfMonths, listOfYears)
