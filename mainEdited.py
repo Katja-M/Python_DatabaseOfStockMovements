@@ -10,34 +10,15 @@ from datetime import datetime #helpful when tryiing to format time from files
 import csv
 import xlsxwriter # in order to generate an excel spreadsheet
 
-################################################################
-# Step 1: Create a table in our database to hold the stock data
-################################################################
+###################################################################
+# All functions are on top
+###################################################################
 
-#Connecting to a database
-#Open a connection to a database which basically represents the database
-#Name of the database 'example'. By default, the database lives on disk.
-conn = sqlite3.connect('example.db')
-#Set up a cursor.
-#The cursor allows to run commands on the database.
-cursor = conn.cursor()
-#Create table with an execute statement. The SQL-statement is written inside the brackets.
-#real to specify decimal numbers.
-cursor.execute('CREATE TABLE prices (SYMBOL text, SERIES text, OPEN real, HIGH real, LOW real, CLOSE real, LAST real, PREVCLOSE real, TOTTRDQTY real, TOTTRDVal real, TIMESTAMP date, TOTALTRADES real, ISIN text, PRIMARY KEY (SYMBOL, SERIES, TIMESTAMP)  )')
-#Creating a table is a write operation, which means we have to commit before moving on.
-conn.commit()
+#Functions to download and unzip file
 
-##################################################################################
-# Step 2: Download a bunch of files and unzip them
-##################################################################################
-def download(PlocalZipFilePath, PurlofFileName):
-    #initialize variable with the URL to download
-    #Website: National Stock Exchange of India
-    urlOfFileName = PurlofFileName
-
-    #initialize a variable with the local file in which to store the file
-    #This is a path on the local desktop
-    localZipFilePath = PlocalZipFilePath
+def download(localZipFilePath, urlofFileName):
+    #localZipFilePath is a variable with the local file in which to store the file. This is a path on the local desktop
+    #urlofFileName is the variable with the URL to download
 
     #The following code is a boilerplate to deal with the fact that the website blocks bots/automated scripts
     hdr = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36',
@@ -46,7 +27,7 @@ def download(PlocalZipFilePath, PurlofFileName):
     #The following code will actually download and store the file
 
     #Make the web request by using a web brower
-    webRequest = urllib.request.Request(urlOfFileName, headers = hdr)
+    webRequest = urllib.request.Request(urlofFileName, headers = hdr)
 
     try:
         #Making download request
@@ -69,10 +50,8 @@ def download(PlocalZipFilePath, PurlofFileName):
         print(httpe.fp.read())
         print('Looks like to file download did not go through for url = ' + urlOfFileName)
 
-def unzip(localZipFilePath, PlocalExtractFilePath):
-    #initiliaze a variable with the local directory in which to extract
-    #the zip file above
-    localExtractFilePath = PlocalExtractFilePath
+def unzip(localZipFilePath, localExtractFilePath):
+    #localExtractFilePath is the variable with the local directory in which to extract the zip file above
 
     #Check if the zip file was downloaded successfully
     if os.path.exists(localZipFilePath):
@@ -139,19 +118,7 @@ def downloadAndUnzipForPeriod(listOfMonths, listOfyears):
                 time.sleep(10)
     print('Done with downloading and extracting')
 
-#Initialize a variable with a local directory in which to extract the zip file above
-localExtractFilePath = 'C:/Users/Katja/PythonCodingTraining/DatabaseOfStockMovements/Data/'
-
-#Initialize list of month and use the Indian Stock Exchange Pattern
-
-listOfMonths = ['FEB']
-listOfYears = ['2018']
-
-downloadAndUnzipForPeriod(listOfMonths, listOfYears)
-
-#############################################################################
-# Step 3: Parce each file, and insert each row of each file into the database
-##############################################################################
+#Function to parse the files
 
 #The following function will read all the rows in the csv. file and
 # insert these rows in the table in our database
@@ -188,27 +155,7 @@ def insertRows(fileName, conn):
     conn.commit()
     print('Done iterating over file content. - The file has been closed.')
 
-#Use os-module to get a list of all files in a particular directory
-for file in os.listdir(localExtractFilePath):
-    #We iterate over each file and for each file we call the insertRow function
-    if file.endswith('.csv'):
-        insertRows(localExtractFilePath+'/'+file, conn)
-
-#########################################################################################
-# Step 4: Run a test query against the database to make sure it is set up OK
-#########################################################################################
-
-ticker = 'ICICIBANK'
-series = 'EQ'
-c = conn.cursor()
-cursor = c.execute('SELECT symbol, max(close), min(close), max(timestamp),min(timestamp), count(timestamp) FROM prices WHERE symbol = ? and series = ? GROUP BY symbol ORDER BY timestamp', (ticker,series))
-for row in cursor:
-    print(row)
-
-#####################################################################################
-# Step 5: Run a query to get all data for a given stock, and create an excel summary
-#####################################################################################
-
+#Functions to create Excel-file
 # The following function will take in a ticker and a database connection and it will return an excel file
 def createExcelWithDailyPriceMoves(ticker, conn):
     #We will use the cursor to execute SQL commands
@@ -246,16 +193,73 @@ def createExcelWithDailyPriceMoves(ticker, conn):
     worksheet.insert_chart('F2', chart1,{'x_offset' : 25, 'y_offset' : 10})
     workbook.close()
 
+
+################################################################
+# Step 1: Create a table in our database to hold the stock data
+################################################################
+
+#Connecting to a database
+#Open a connection to a database which basically represents the database
+#Name of the database 'example'. By default, the database lives on disk.
+conn = sqlite3.connect('exampleedited.db')
+#Set up a cursor.
+#The cursor allows to run commands on the database.
+cursor = conn.cursor()
+#Create table with an execute statement. The SQL-statement is written inside the brackets.
+#real to specify decimal numbers.
+cursor.execute('CREATE TABLE prices (SYMBOL text, SERIES text, OPEN real, HIGH real, LOW real, CLOSE real, LAST real, PREVCLOSE real, TOTTRDQTY real, TOTTRDVal real, TIMESTAMP date, TOTALTRADES real, ISIN text, PRIMARY KEY (SYMBOL, SERIES, TIMESTAMP)  )')
+#Creating a table is a write operation, which means we have to commit before moving on.
+conn.commit()
+
+##################################################################################
+# Step 2: Download a bunch of files and unzip them
+##################################################################################
+
+#Initialize a variable with a local directory in which to extract the zip file above
+localExtractFilePath = 'C:/Users/Katja/PythonCodingTraining/DatabaseOfStockMovements/Data/'
+
+#Initialize list of month and use the Indian Stock Exchange Pattern
+
+listOfMonths = ['APR']
+listOfYears = ['2019']
+
+downloadAndUnzipForPeriod(listOfMonths, listOfYears)
+
+#############################################################################
+# Step 3: Parce each file, and insert each row of each file into the database
+##############################################################################
+
+#Use os-module to get a list of all files in a particular directory
+for file in os.listdir(localExtractFilePath):
+    #We iterate over each file and for each file we call the insertRow function
+    if file.endswith('.csv'):
+        insertRows(localExtractFilePath+'/'+file, conn)
+
+#########################################################################################
+# Step 4: Run a test query against the database to make sure it is set up OK
+#########################################################################################
+
+ticker = 'ICICIBANK'
+series = 'EQ'
+#c = conn.cursor()
+cursor_query = cursor.execute('SELECT symbol, max(close), min(close), max(timestamp),min(timestamp), count(timestamp) FROM prices WHERE symbol = ? and series = ? GROUP BY symbol ORDER BY timestamp', (ticker,series))
+for row in cursor_query:
+    print(row)
+
+#####################################################################################
+# Step 5: Run a query to get all data for a given stock, and create an excel summary
+#####################################################################################
+
 #Create a connection
-conn = sqlite3.connect('example.db')
-#Call the function above to create an excel file for the ticker RELIANCE
-createExcelWithDailyPriceMoves('RELIANCE',conn)
+#conn = sqlite3.connect('example.db')
+#Call the function above to create an excel file for the ticker BEDMUTHA
+createExcelWithDailyPriceMoves('BEDMUTHA',conn)
 #No need to commit because we only read from the database
 
 #################################################################
 # Step 6: Dropping the table to clear up
 #################################################################
-
+"""
 # Step 1: Open a connection
 conn = sqlite3.connect('example.db')
 # Step 2: Get a cursor
@@ -266,3 +270,4 @@ c.execute('DROP TABLE prices')
 conn.commit()
 #Step 5: Close the connection
 conn.close()
+"""
